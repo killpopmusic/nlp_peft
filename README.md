@@ -15,7 +15,7 @@ source peft_env/bin/activate
 
 2. Ensure the proper Nvidia drivers and CUDA installation 
 ```bash
-nvidia-sm
+nvidia-smi
 ```
 
 3. For CUDA 12.x install Pytorch with: 
