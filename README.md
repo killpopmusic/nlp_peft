@@ -28,8 +28,6 @@ pip install transformers peft datasets
 ``` 
 
 5. Begin your prayers and then verify CUDA/PyTorch 
-\`\`\`python
-import torch
-print(f"PyTorch: {torch.__version__}")
-print(f"CUDA available: {torch.cuda.is_available()}")
-\`\`\`
+```bash
+python3 cuda_verify.py
+```
