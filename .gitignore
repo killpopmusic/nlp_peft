@@ -1,0 +1,25 @@
+# Środowiska wirtualne
+peft_env/  
+.venv/     # Alternatywna nazwa
+
+# Dane i modele
+/data/
+/models/
+/outputs/
+
+# Cache Pythona
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Logi
+logs/
+wandb/
+
+# IDE/Edytory
+.idea/
+.vscode/
+
+# Systemowe
+.DS_Store
+*.ipynb
