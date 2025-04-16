@@ -1,25 +1,35 @@
-#virtual_env
-peft_env/  
-.venv/    
+# === Python Virtual Environments ===
+peft_env/
+.venv/
+env/
+venv/
 
-# models and data 
-/data/
-/models/
-
-
-# python cache 
+# === Python cache & build files ===
 __pycache__/
 *.py[cod]
+*.so
+*.egg
 *.egg-info/
+dist/
+build/
 
-# logs
+
+# === Logs & Experiment Tracking ===
 logs/
 wandb/
+*.log
+*.out
 
-# IDE/
+
+# === IDEs and Editors ===
 .idea/
 .vscode/
+*.swp
 
-# System
+# === System Files ===
 .DS_Store
-*.ipynb
+Thumbs.db
+
+# === Other ===
+output/
+.cache/
