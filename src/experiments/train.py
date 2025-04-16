@@ -16,7 +16,14 @@ def parse_args():
 def main():
     args = parse_args()
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    dataset = load_emotion_dataset(tokenizer)
+    
+    # For prompt or prefix tuning, reduce the max_length by the number of virtual tokens (20)
+    if args.method in ["prefix", "prompt"]:
+        effective_max_length = tokenizer.model_max_length - 20
+    else:
+        effective_max_length = tokenizer.model_max_length
+
+    dataset = load_emotion_dataset(tokenizer, max_length=effective_max_length)
 
     model = create_model(args.model_name, num_labels=6, method=args.method)
     model.print_trainable_parameters()
