@@ -39,7 +39,7 @@ To run the project:
 ```bash
 python main.py
 ```
-this will use default arguments, you can mmodify them by 
+this will use default arguments, you can modify them by 
 
 ```bash
 python main.py --method lora/prefix/prompt --epochs i --batch_size j 
