@@ -24,10 +24,23 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 4. Install dependencies: 
 ```bash
-pip install transformers peft datasets
+pip install transformers peft datasets evaluate scikit-learn
 ``` 
 
 5. Begin your prayers and then verify CUDA/PyTorch 
 ```bash
 python3 cuda_verify.py
+```
+
+
+### Running the project
+
+To run the project: 
+```bash
+python main.py
+```
+this will use default arguments, you can mmodify them by 
+
+```bash
+python main.py --method lora/prefix/prompt --epochs i --batch_size j 
 ```
