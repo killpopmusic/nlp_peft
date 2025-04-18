@@ -21,17 +21,17 @@ def create_model(model_name, num_labels, method="none"):
         peft_config = PrefixTuningConfig(
             task_type=TaskType.SEQ_CLS,
             num_virtual_tokens=20,
-            num_layers=12,  
+            num_layers=12,  #adjust if changing the mdoel 
             token_dim=768,
-            num_attention_heads=12  # added num_attention_heads
+            num_attention_heads=12  #adjust if changing the model
         )
     elif method == "prompt":
         peft_config = PromptTuningConfig(
             task_type=TaskType.SEQ_CLS,
             num_virtual_tokens=20,
-            num_layers=12, 
+            num_layers=12, #adjust if changing the model
             token_dim=768,
-            num_attention_heads=12  # added num_attention_heads
+            num_attention_heads=12  #adjust if changing the model
         )
     else:
         return base_model

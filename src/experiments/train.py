@@ -1,8 +1,12 @@
 import argparse
+import json
+
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 
 from data.loader import load_emotion_dataset
 from models.models import create_model
+
+from sklearn.metrics import accuracy_score, f1_score 
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -11,7 +15,38 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--output_dir", type=str, default="./output")
+    parser.add_argument("--learning_rate", type=float, default=2e-5)
     return parser.parse_args()
+
+def save_results(method, results, trainable_params, args, filename="results.json"):  
+    entry = {
+        "method": method,
+        "accuracy": results.get("eval_accuracy", None),
+        "f1": results.get("eval_f1", None),
+        "trainable_params": trainable_params,
+        "parameters": {
+            "model_name": args.model_name,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "output_dir": args.output_dir
+        }
+    }
+    try:
+        with open(filename, "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = []
+    data.append(entry)
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=2)
+
+def compute_metrics(eval_pred):  
+    logits, labels = eval_pred
+    preds = logits.argmax(axis=-1)
+    return {
+        "accuracy": accuracy_score(labels, preds),
+        "f1": f1_score(labels, preds, average="weighted"),
+    }
 
 def main():
     args = parse_args()
@@ -32,6 +67,7 @@ def main():
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
         num_train_epochs=args.epochs,
+        learning_rate=args.learning_rate,
         logging_steps=10,
         report_to="none"
     )
@@ -41,12 +77,16 @@ def main():
         args=training_args,
         train_dataset=dataset["train"],
         eval_dataset=dataset["validation"],
-        tokenizer=tokenizer
+        tokenizer=tokenizer,
+        compute_metrics=compute_metrics
     )
 
     trainer.train()
     results = trainer.evaluate()
     print("Evaluation:", results)
+
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    save_results(args.method, results, trainable_params, args)
 
 if __name__ == "__main__":
     main()
