@@ -3,7 +3,7 @@ import json
 
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 
-from data.loader import load_emotion_dataset
+from data.load_imdb import load_imdb_dataset
 from models.models import create_model
 
 from sklearn.metrics import accuracy_score, f1_score 
@@ -12,10 +12,10 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--method", type=str, default="lora", choices=["none", "lora", "prefix", "prompt"])
     parser.add_argument("--model_name", type=str, default="bert-base-uncased")
-    parser.add_argument("--epochs", type=int, default=1)
-    parser.add_argument("--batch_size", type=int, default=4)
+    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--output_dir", type=str, default="./output")
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
     return parser.parse_args()
 
 def save_results(method, results, trainable_params, args, filename="results.json"):  
@@ -58,7 +58,7 @@ def main():
     else:
         effective_max_length = tokenizer.model_max_length
 
-    dataset = load_emotion_dataset(tokenizer, max_length=effective_max_length)
+    dataset = load_imdb_dataset(tokenizer, max_length=effective_max_length)
 
     model = create_model(args.model_name, num_labels=6, method=args.method)
     model.print_trainable_parameters()
@@ -69,14 +69,16 @@ def main():
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,
         logging_steps=10,
-        report_to="none"
+        report_to="none",
+        warmup_steps=100,
+        lr_scheduler_type="constant"
     )
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset["train"],
-        eval_dataset=dataset["validation"],
+        eval_dataset=dataset["test"],
         tokenizer=tokenizer,
         compute_metrics=compute_metrics
     )

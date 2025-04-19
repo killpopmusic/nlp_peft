@@ -14,7 +14,7 @@ def create_model(model_name, num_labels, method="none"):
         peft_config = LoraConfig(
             r=8,
             lora_alpha=32,
-            target_modules=["query", "value"],
+            target_modules=["q_lin", "v_lin"],
             task_type=TaskType.SEQ_CLS
         )
     elif method == "prefix":
