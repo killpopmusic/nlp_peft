@@ -4,7 +4,7 @@ import time
 import torch
 import wandb
 
-from transformers import AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoTokenizer, Trainer, TrainingArguments, EarlyStoppingCallback
 from data.load_emotion import load_emotion_dataset
 from models.models import create_model
 from sklearn.metrics import accuracy_score, f1_score
@@ -89,7 +89,10 @@ def main():
         logging_steps=10,
         report_to="wandb",
         warmup_steps=100,
-        lr_scheduler_type="constant"
+        lr_scheduler_type="constant",
+        eval_strategy="steps",
+        eval_steps=500,
+        load_best_model_at_end=True
     )
 
     trainer = Trainer(
@@ -99,6 +102,7 @@ def main():
         eval_dataset=dataset["validation"],
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
     )
 
     start_time = time.time()

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for method in  lora prefix prompt
+for method in   prefix prompt none
 do
-  python main.py --method $method --epochs 7 --batch_size 16 --model_name bert-base-uncased
+  python main.py --method $method --epochs 5 
 done
