@@ -7,6 +7,6 @@ def load_emotion_dataset(tokenizer, max_length=None):
         return tokenizer(example["text"], padding="max_length", truncation=True, max_length=ml)
     dataset = dataset.map(tokenize, batched=True)
     # Take a small subset for quick runs
-    dataset["train"] = dataset["train"].select(range(500))
-    dataset["validation"] = dataset["validation"].select(range(100))
+    #dataset["train"] = dataset["train"].select(range(500))
+    #dataset["validation"] = dataset["validation"].select(range(100))
     return dataset

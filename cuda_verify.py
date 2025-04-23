@@ -1,3 +1,4 @@
 import torch
-print(torch.cuda.is_available())  # Powinno zwrócić True
-print(torch.__version__)  # np. 2.3.0
+print(torch.cuda.is_available())
+print(torch.cuda.get_device_name(0))
+print(torch.version.cuda)
