@@ -18,8 +18,8 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     # Define file paths
     train_src_path = os.path.join(data_dir, "train.src")
     train_tgt_path = os.path.join(data_dir, "train.tgt")
-    test_src_path = os.path.join(data_dir, "test.src")
-    test_tgt_path = os.path.join(data_dir, "test.tgt")
+    test_src_path = os.path.join(data_dir, "valid.src")
+    test_tgt_path = os.path.join(data_dir, "valid.tgt")
     
     # Check if files exist
     if not os.path.exists(train_src_path) or not os.path.exists(train_tgt_path):
@@ -34,35 +34,37 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     with open(test_src_path, 'r', encoding='utf-8') as f:
         test_src = [line.strip() for line in f.readlines()]
     
-    # Read and parse target files (containing lists of formal rewrites)
+    # Read and parse target files (plain sentences, not lists)
     with open(train_tgt_path, 'r', encoding='utf-8') as f:
-        train_tgt_raw = [line.strip() for line in f.readlines()]
-        train_tgt = []
-        for line in train_tgt_raw:
-            try:
-                # The target file contains Python-formatted lists
-                targets = ast.literal_eval(line)
-                if targets:
-                    # Randomly select one of the formal rewrites
-                    train_tgt.append(random.choice(targets))
-                else:
-                    train_tgt.append("")
-            except (SyntaxError, ValueError):
-                # If parsing fails, use the raw line
-                train_tgt.append(line)
-    
+        train_tgt = [line.strip() for line in f.readlines()]
+        empty_train_targets_count = sum(1 for t in train_tgt if not t)
+        print(f"Training targets: {empty_train_targets_count} empty targets, out of {len(train_tgt)} total.")
+
     with open(test_tgt_path, 'r', encoding='utf-8') as f:
         test_tgt_raw = [line.strip() for line in f.readlines()]
+        # Try to parse as list, fallback to plain string if fails
         test_tgt = []
-        for line in test_tgt_raw:
+        empty_test_targets_count = 0
+        malformed_test_targets_count = 0
+        for line_content in test_tgt_raw:
             try:
-                targets = ast.literal_eval(line)
-                if targets:
-                    test_tgt.append(random.choice(targets))
+                targets = ast.literal_eval(line_content)
+                if isinstance(targets, list) and targets:
+                    chosen_target = random.choice(targets)
+                    test_tgt.append(chosen_target)
+                elif isinstance(targets, str) and targets.strip():
+                    test_tgt.append(targets)
                 else:
                     test_tgt.append("")
+                    empty_test_targets_count += 1
             except (SyntaxError, ValueError):
-                test_tgt.append(line)
+                if line_content.strip():
+                    test_tgt.append(line_content)
+                    malformed_test_targets_count += 1
+                else:
+                    test_tgt.append("")
+                    empty_test_targets_count += 1
+        print(f"Test targets: {empty_test_targets_count} empty targets, {malformed_test_targets_count} malformed but kept, out of {len(test_tgt_raw)} total.")
     
     # Create datasets
     train_dataset = Dataset.from_dict({

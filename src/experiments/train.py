@@ -34,13 +34,30 @@ def compute_metrics_seq2seq(eval_pred):
         predictions = predictions[0]
     
     global tokenizer
-    predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions)
+    # predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) # Keep this commented
     labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
+
+    print("\n--- Detailed Generation Debug ---")
+    for i in range(min(3, len(predictions))): # Print details for first 3 samples
+        print(f"Sample {i+1} Raw Prediction Tokens: {predictions[i][:30]}") # Print first 30 tokens
+        decoded_pred_no_skip = tokenizer.decode(predictions[i], skip_special_tokens=False)
+        print(f"Sample {i+1} Decoded Prediction (no skip): '{decoded_pred_no_skip}'")
+        decoded_pred_skip = tokenizer.decode(predictions[i], skip_special_tokens=True)
+        print(f"Sample {i+1} Decoded Prediction (skip_special_tokens=True): '{decoded_pred_skip}'")
+        
+        # Check what strip() does
+        processed_pred_for_bertscore = decoded_pred_skip.strip()
+        print(f"Sample {i+1} Processed Prediction for BERTscore (after strip()): '{processed_pred_for_bertscore}' (is_empty: {not bool(processed_pred_for_bertscore)})")
+
+        decoded_label_skip = tokenizer.decode(labels[i], skip_special_tokens=True) # Assuming labels are already processed for -100
+        print(f"Sample {i+1} Decoded Label (skip_special_tokens=True): '{decoded_label_skip}'")
+    print("--- End Detailed Generation Debug ---\n")
 
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
-    print("Sample Predictions and Labels:")
+    # Original print for quick overview
+    print("Sample Predictions and Labels (batch_decode):")
     for i in range(min(5, len(decoded_preds))):
         print(f"Prediction {i+1}: '{decoded_preds[i]}'")
         print(f"Label      {i+1}: '{decoded_labels[i]}'")
@@ -49,14 +66,21 @@ def compute_metrics_seq2seq(eval_pred):
     processed_labels_for_bleu = [[label.strip()] for label in decoded_labels]
     processed_labels_for_others = [label.strip() for label in decoded_labels]
 
+    # Check how many preds are non-empty for BERTscore
+    non_empty_preds_for_bertscore = [p for p in processed_preds if p]
+    print(f"Number of non-empty predictions for BERTscore: {len(non_empty_preds_for_bertscore)} out of {len(processed_preds)}")
+
+
     bleu = bleu_metric.compute(predictions=processed_preds, references=processed_labels_for_bleu)
     rouge = rouge_metric.compute(predictions=processed_preds, references=processed_labels_for_others)
 
     bs_preds, bs_refs = [], []
     for pred, ref in zip(processed_preds, processed_labels_for_others):
-        if pred and ref:
+        if pred and ref: # This condition is key for BERTscore
             bs_preds.append(pred)
             bs_refs.append(ref)
+    
+    print(f"Number of pairs for BERTscore calculation: {len(bs_preds)}")
 
     bertscore = bertscore_metric.compute(predictions=bs_preds, references=bs_refs, lang="en") if bs_preds else {"precision": [0.0], "recall": [0.0], "f1": [0.0]}
 
@@ -114,8 +138,16 @@ def main():
         group=args.method,
         config=vars(args)
     )
-    global tokenizer  # Make tokenizer available globally for compute_metrics_seq2seq
+    global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    print(f"Tokenizer: {tokenizer.__class__}")
+    print(f"Tokenizer pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}")
+    print(f"Tokenizer eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
+    print(f"Tokenizer bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}") # Beginning of sentence
+    print(f"Tokenizer model_max_length: {tokenizer.model_max_length}")
+    # For T5, decoder_start_token_id is usually pad_token_id
+    # print(f"Model config decoder_start_token_id: {model.config.decoder_start_token_id if hasattr(model, 'config') else 'N/A before model load'}")
+
 
     if args.method in ["prefix", "prompt"]:
         effective_max_length = tokenizer.model_max_length - 100
@@ -128,6 +160,10 @@ def main():
     if is_seq2seq:
         dataset = load_style_dataset(tokenizer, max_length=effective_max_length)
         model = create_model(args.model_name, method=args.method, task_type="SEQ_2_SEQ_LM")
+        print(f"Model config decoder_start_token_id: {model.config.decoder_start_token_id}")
+        print(f"Model config eos_token_id: {model.config.eos_token_id}")
+        print(f"Model config pad_token_id: {model.config.pad_token_id}")
+        print(f"Model config max_length for generation (default): {model.config.max_length}")
         data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
         compute_metrics_fn = compute_metrics_seq2seq
     else:
@@ -145,7 +181,7 @@ def main():
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,
         logging_steps=10,
-        report_to="wandb",
+        report_to=[],
         warmup_steps=100,
         lr_scheduler_type="constant",
         eval_strategy="steps",
@@ -164,8 +200,10 @@ def main():
         lr_scheduler_type="constant",
         eval_strategy="steps",
         eval_steps=500,
-        predict_with_generate=True,  # Always True for seq2seq
+        predict_with_generate=True,
         load_best_model_at_end=True,
+        generation_max_length=64,  # Explicitly set a reasonable max length
+        generation_num_beams=4,    # Optionally add beam search
     )
 
     # Use the appropriate trainer based on the task
