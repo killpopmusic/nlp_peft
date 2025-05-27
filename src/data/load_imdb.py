@@ -1,11 +1,10 @@
 from datasets import load_dataset
 
-def load_imdb_dataset(tokenizer, max_length=None):
+def load_imdb_dataset(tokenizer, max_length):
     dataset = load_dataset("imdb")
-    def tokenize(example):
-        ml = max_length if max_length is not None else tokenizer.model_max_length
-        return tokenizer(example["text"], padding="max_length", truncation=True, max_length=ml)
-    dataset = dataset.map(tokenize, batched=True)
-    dataset["train"] = dataset["train"].select(range(1000))
-    dataset["test"] = dataset["test"].select(range(200))
-    return dataset
+    tokenized_dataset = dataset.map(lambda examples: tokenizer(examples["text"], truncation=True, max_length=max_length), batched=True)
+    # Split the training data into training and validation sets
+    split = tokenized_dataset["train"].train_test_split(test_size=0.1)  # e.g., 10% for validation
+    tokenized_dataset["train"] = split["train"]
+    tokenized_dataset["validation"] = split["test"]
+    return tokenized_dataset

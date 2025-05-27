@@ -5,7 +5,9 @@ import torch
 import wandb
 
 from transformers import AutoTokenizer, Trainer, TrainingArguments, EarlyStoppingCallback
-from data.load_emotion import load_emotion_dataset
+# from data.load_emotion import load_emotion_dataset
+from data.load_imdb import load_imdb_dataset
+
 from models.models import create_model
 from sklearn.metrics import accuracy_score, f1_score
 
@@ -76,7 +78,7 @@ def main():
     else:
         effective_max_length = tokenizer.model_max_length
 
-    dataset = load_emotion_dataset(tokenizer, max_length=effective_max_length)
+    dataset = load_imdb_dataset(tokenizer, max_length=effective_max_length)
     model = create_model(args.model_name, num_labels=6, method=args.method)
     if args.method in ["lora", "prefix", "prompt"]:
         model.print_trainable_parameters()
