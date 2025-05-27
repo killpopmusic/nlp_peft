@@ -24,7 +24,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 4. Install dependencies: 
 ```bash
-pip install transformers peft datasets evaluate scikit-learn matplotlib
+pip install transformers peft datasets evaluate scikit-learn matplotlib wandb
 ``` 
 
 5. Begin your prayers and then verify CUDA/PyTorch 
@@ -32,6 +32,7 @@ pip install transformers peft datasets evaluate scikit-learn matplotlib
 python3 cuda_verify.py
 ```
 
+6. Login to wandb with instructions from the [wandb page](https://wandb.ai/home)
 
 ### Running the project
 
