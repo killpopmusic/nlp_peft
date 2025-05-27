@@ -3,21 +3,72 @@ import json
 import time
 import torch
 import wandb
+import evaluate
+import numpy as np
 
-from transformers import AutoTokenizer, Trainer, TrainingArguments, EarlyStoppingCallback
+from transformers import AutoTokenizer, Trainer, Seq2SeqTrainer, TrainingArguments, EarlyStoppingCallback, DataCollatorForSeq2Seq,  Seq2SeqTrainingArguments
 from data.load_emotion import load_emotion_dataset
+from data.load_style_dataset import load_style_dataset
 from models.models import create_model
 from sklearn.metrics import accuracy_score, f1_score
 
+#load metrics for seq2seq
+bleu_metric = evaluate.load("bleu")
+rouge_metric = evaluate.load("rouge")
+bertscore_metric = evaluate.load("bertscore")
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--method", type=str, default="lora", choices=["none", "lora", "prefix", "prompt"])
+    parser.add_argument("--method", type=str, default="prefix", choices=["none", "lora", "prefix", "prompt"])
     parser.add_argument("--model_name", type=str, default="bert-base-uncased")
-    parser.add_argument("--epochs", type=int, default=8)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--epochs", type=int, default=15)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--output_dir", type=str, default="./output")
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
     return parser.parse_args()
+
+
+def compute_metrics_seq2seq(eval_pred):
+    predictions, labels = eval_pred
+    if isinstance(predictions, tuple):
+        predictions = predictions[0]
+    
+    global tokenizer
+    predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions)
+    labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
+
+    decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+
+    print("Sample Predictions and Labels:")
+    for i in range(min(5, len(decoded_preds))):
+        print(f"Prediction {i+1}: '{decoded_preds[i]}'")
+        print(f"Label      {i+1}: '{decoded_labels[i]}'")
+
+    processed_preds = [pred.strip() for pred in decoded_preds]
+    processed_labels_for_bleu = [[label.strip()] for label in decoded_labels]
+    processed_labels_for_others = [label.strip() for label in decoded_labels]
+
+    bleu = bleu_metric.compute(predictions=processed_preds, references=processed_labels_for_bleu)
+    rouge = rouge_metric.compute(predictions=processed_preds, references=processed_labels_for_others)
+
+    bs_preds, bs_refs = [], []
+    for pred, ref in zip(processed_preds, processed_labels_for_others):
+        if pred and ref:
+            bs_preds.append(pred)
+            bs_refs.append(ref)
+
+    bertscore = bertscore_metric.compute(predictions=bs_preds, references=bs_refs, lang="en") if bs_preds else {"precision": [0.0], "recall": [0.0], "f1": [0.0]}
+
+    return {
+        "bleu": bleu["bleu"],
+        "rouge1": rouge["rouge1"],
+        "rouge2": rouge["rouge2"],
+        "rougeL": rouge["rougeL"],
+        "bertscore_precision": np.mean(bertscore["precision"]),
+        "bertscore_recall": np.mean(bertscore["recall"]),
+        "bertscore_f1": np.mean(bertscore["f1"]),
+    }
 
 def save_results(method, results, trainable_params, args, train_time=None, max_memory=None, filename="results.json"):
     entry = {
@@ -60,24 +111,31 @@ def main():
     args = parse_args()
     wandb.init(
         project="peft_comparison",
-        group=args.method,  # Group runs by method
-        config={
-            "method": args.method,
-            "model_name": args.model_name,
-            "epochs": args.epochs,
-            "batch_size": args.batch_size,
-            "learning_rate": args.learning_rate,
-            "output_dir": args.output_dir
-        }
+        group=args.method,
+        config=vars(args)
     )
+    global tokenizer  # Make tokenizer available globally for compute_metrics_seq2seq
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+
     if args.method in ["prefix", "prompt"]:
         effective_max_length = tokenizer.model_max_length - 100
     else:
         effective_max_length = tokenizer.model_max_length
 
-    dataset = load_emotion_dataset(tokenizer, max_length=effective_max_length)
-    model = create_model(args.model_name, num_labels=6, method=args.method)
+    # Check if the task is classification or seq2seq
+    is_seq2seq = "t5" in args.model_name.lower() or "seq2seq" in args.model_name.lower()
+    
+    if is_seq2seq:
+        dataset = load_style_dataset(tokenizer, max_length=effective_max_length)
+        model = create_model(args.model_name, method=args.method, task_type="SEQ_2_SEQ_LM")
+        data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+        compute_metrics_fn = compute_metrics_seq2seq
+    else:
+        dataset = load_emotion_dataset(tokenizer, max_length=effective_max_length)
+        model = create_model(args.model_name, num_labels=6, method=args.method)
+        data_collator = None
+        compute_metrics_fn = compute_metrics
+
     if args.method in ["lora", "prefix", "prompt"]:
         model.print_trainable_parameters()
 
@@ -92,18 +150,48 @@ def main():
         lr_scheduler_type="constant",
         eval_strategy="steps",
         eval_steps=500,
-        load_best_model_at_end=True
+        load_best_model_at_end=True,
     )
 
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=dataset["train"],
-        eval_dataset=dataset["validation"],
-        tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=2)]
+    seq_training_args = Seq2SeqTrainingArguments(
+        output_dir=args.output_dir,
+        per_device_train_batch_size=args.batch_size,
+        num_train_epochs=args.epochs,
+        learning_rate=args.learning_rate,
+        logging_steps=10,
+        report_to="wandb",
+        warmup_steps=100,
+        lr_scheduler_type="constant",
+        eval_strategy="steps",
+        eval_steps=500,
+        predict_with_generate=True,  # Always True for seq2seq
+        load_best_model_at_end=True,
     )
+
+    # Use the appropriate trainer based on the task
+    if is_seq2seq:
+        trainer = Seq2SeqTrainer(
+            model=model,
+            args=seq_training_args,
+            train_dataset=dataset["train"],
+            eval_dataset=dataset["test"],
+            tokenizer=tokenizer,
+            compute_metrics=compute_metrics_fn,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
+            data_collator=data_collator,
+            #predict_with_generate=True 
+        )
+    else:
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=dataset["train"],
+            eval_dataset=dataset["test"],
+            tokenizer=tokenizer,
+            compute_metrics=compute_metrics_fn,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
+            data_collator=data_collator
+        )
 
     start_time = time.time()
     trainer.train()
