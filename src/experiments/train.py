@@ -18,7 +18,7 @@ def parse_args():
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--output_dir", type=str, default="./output")
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-4)
     return parser.parse_args()
 
 def save_results(method, results, trainable_params, args, train_time=None, max_memory=None, filename="results.json"):

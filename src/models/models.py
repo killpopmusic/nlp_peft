@@ -20,7 +20,7 @@ def create_model(model_name, num_labels, method="none"):
     elif method == "prefix":
         peft_config = PrefixTuningConfig(
             task_type=TaskType.SEQ_CLS,
-            num_virtual_tokens=100,
+            num_virtual_tokens=10,
             num_layers=12,  #adjust if changing the mdoel 
             token_dim=768,
             num_attention_heads=12  #adjust if changing the model
