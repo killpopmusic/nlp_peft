@@ -58,7 +58,7 @@ def compute_metrics_seq2seq(eval_pred):
 
     # Original print for quick overview
     print("Sample Predictions and Labels (batch_decode):")
-    for i in range(min(5, len(decoded_preds))):
+    for i in range(min(10, len(decoded_preds))):
         print(f"Prediction {i+1}: '{decoded_preds[i]}'")
         print(f"Label      {i+1}: '{decoded_labels[i]}'")
 
@@ -207,13 +207,13 @@ def main():
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,
         logging_steps=10,
-        report_to=[],
+        report_to=["wandb"],
         warmup_steps=100,
         lr_scheduler_type="constant",
         eval_strategy="steps",
         eval_steps=2000,
         predict_with_generate=True,
-        load_best_model_at_end=True,
+        #load_best_model_at_end=True,
         # generation_max_length=64,  
         # generation_num_beams=4,    # Optionally add beam search
         generation_config = generation_config,  # Use the defined generation config

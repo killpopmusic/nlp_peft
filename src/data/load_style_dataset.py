@@ -90,8 +90,8 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     })
     
     # Limit dataset size for faster experiments (matching original code)
-    train_size = min(10000, len(dataset_dict["train"]))
-    test_size = min(600, len(dataset_dict["test"]))
+    train_size = min(20000, len(dataset_dict["train"]))
+    test_size = min(1000, len(dataset_dict["test"]))
     
     dataset_dict["train"] = dataset_dict["train"].select(range(train_size))
     dataset_dict["test"] = dataset_dict["test"].select(range(test_size))
