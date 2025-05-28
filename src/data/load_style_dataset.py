@@ -3,7 +3,7 @@ import ast
 import os
 import random
 
-def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Projects/nlp_peft/src/data/gyafc_em"):
+def load_style_dataset(tokenizer, max_length=None, data_dir="/home/max/Projects/nlp_peft/src/data/gyafc_em"):
     """
     Load style transfer dataset from local files.
     
@@ -101,9 +101,10 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     # Tokenize the datasets
     def tokenize(example):
         ml = max_length if max_length is not None else tokenizer.model_max_length
-        instruction = "Rewrite in formal style: "
+        # instruction = "Rewrite in formal style: " # comment this out if using prompt tuning
         # Obsługa batcha
-        sources = [instruction + src for src in example["source"]]
+        # sources = [instruction + src for src in example["source"]] # comment this out if using prompt tuning
+        sources = example["source"]
         model_inputs = tokenizer(sources, padding="max_length", truncation=True, max_length=ml)
         labels = tokenizer(text_target=example["target"], padding="max_length", truncation=True, max_length=ml)
         model_inputs["labels"] = labels["input_ids"]

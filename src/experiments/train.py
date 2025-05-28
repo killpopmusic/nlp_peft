@@ -183,7 +183,7 @@ def main():
         logging_steps=10,
         report_to=[],
         warmup_steps=100,
-        lr_scheduler_type="constant",
+        lr_scheduler_type="linear",
         eval_strategy="steps",
         eval_steps=500,
         load_best_model_at_end=True,
@@ -195,7 +195,7 @@ def main():
         num_beams=4,        # Tak jak miałeś
         early_stopping=True, # Dla beam search
         # Możesz też eksperymentować z:
-        # no_repeat_ngram_size=2,
+        no_repeat_ngram_size=3,
         # top_k=50,
         # top_p=0.95,
         # temperature=0.7 
@@ -209,11 +209,14 @@ def main():
         logging_steps=10,
         report_to=["wandb"],
         warmup_steps=100,
-        lr_scheduler_type="constant",
+        lr_scheduler_type="linear",
         eval_strategy="steps",
-        eval_steps=2000,
+        eval_steps=1000,
         predict_with_generate=True,
-        #load_best_model_at_end=True,
+        # load_best_model_at_end=True,
+        # metric_for_best_model="bertscore_f1",  # Use BERTScore F1 as the metric for best model
+        # greater_is_better=True,
+
         # generation_max_length=64,  
         # generation_num_beams=4,    # Optionally add beam search
         generation_config = generation_config,  # Use the defined generation config

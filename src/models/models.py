@@ -5,6 +5,7 @@ from peft import (
     LoraConfig,
     PrefixTuningConfig,
     PromptTuningConfig,
+    PromptTuningInit,
     TaskType
 )
 
@@ -43,11 +44,12 @@ def create_model(model_name, num_labels=None, method="none", task_type="SEQ_CLS"
         )
     elif method == "prompt":
         peft_config = PromptTuningConfig(
-            task_type=peft_task_type,
-            num_virtual_tokens=100,
-            num_layers=12,
-            token_dim=768,
-            num_attention_heads=12
+            task_type=peft_task_type,          # Powinno być TaskType.SEQ_2_SEQ_LM
+            num_virtual_tokens=10,             # Zacznij od mniejszej wartości, np. 20. 100 to dużo.
+            prompt_tuning_init=PromptTuningInit.TEXT, # Inicjalizacja tekstem często daje lepsze wyniki
+            prompt_tuning_init_text="Formally rewrite the following text:", # Przykładowy tekst inicjalizujący
+                                                                        # Możesz użyć instrukcji z load_style_dataset.py
+            tokenizer_name_or_path=model_name  # Wymagane dla TEXT initialization
         )
     else:
         return base_model
