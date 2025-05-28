@@ -42,7 +42,7 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
 
     with open(test_tgt_path, 'r', encoding='utf-8') as f:
         test_tgt_raw = [line.strip() for line in f.readlines()]
-        # Try to parse as list, fallback to plain string if fails
+        # valid tgt is a list
         test_tgt = []
         empty_test_targets_count = 0
         malformed_test_targets_count = 0
@@ -50,7 +50,9 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
             try:
                 targets = ast.literal_eval(line_content)
                 if isinstance(targets, list) and targets:
-                    chosen_target = random.choice(targets)
+                    if not targets:
+                        raise ValueError("Empty list found in test targets!")
+                    chosen_target = targets[0]
                     test_tgt.append(chosen_target)
                 elif isinstance(targets, str) and targets.strip():
                     test_tgt.append(targets)
@@ -84,8 +86,8 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     })
     
     # Limit dataset size for faster experiments (matching original code)
-    train_size = min(1000, len(dataset_dict["train"]))
-    test_size = min(200, len(dataset_dict["test"]))
+    train_size = min(10000, len(dataset_dict["train"]))
+    test_size = min(600, len(dataset_dict["test"]))
     
     dataset_dict["train"] = dataset_dict["train"].select(range(train_size))
     dataset_dict["test"] = dataset_dict["test"].select(range(test_size))

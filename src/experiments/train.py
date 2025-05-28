@@ -34,7 +34,7 @@ def compute_metrics_seq2seq(eval_pred):
         predictions = predictions[0]
     
     global tokenizer
-    # predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) # Keep this commented
+    predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) # Keep this commented
     labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
 
     print("\n--- Detailed Generation Debug ---")
@@ -202,7 +202,7 @@ def main():
         eval_steps=500,
         predict_with_generate=True,
         load_best_model_at_end=True,
-        generation_max_length=64,  # Explicitly set a reasonable max length
+        generation_max_length=64,  
         generation_num_beams=4,    # Optionally add beam search
     )
 
