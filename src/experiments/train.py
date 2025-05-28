@@ -195,14 +195,15 @@ def main():
         num_train_epochs=args.epochs,
         learning_rate=args.learning_rate,
         logging_steps=10,
-        report_to="wandb",
+        report_to=[],
         warmup_steps=100,
         lr_scheduler_type="constant",
         eval_strategy="steps",
-        eval_steps=500,
+        eval_steps=2000,
         predict_with_generate=True,
-        load_best_model_at_end=True,
-        generation_max_length=64,  
+        #load_best_model_at_end=True,
+        generation_max_length=32,  
+        #generation_min_length=5,
         generation_num_beams=4,    # Optionally add beam search
     )
 
@@ -215,7 +216,7 @@ def main():
             eval_dataset=dataset["test"],
             tokenizer=tokenizer,
             compute_metrics=compute_metrics_fn,
-            callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
+            #callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
             data_collator=data_collator,
             #predict_with_generate=True 
         )

@@ -30,15 +30,18 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     # Read source files
     with open(train_src_path, 'r', encoding='utf-8') as f:
         train_src = [line.strip() for line in f.readlines()]
+    print(f"First 5 raw train source examples: {train_src[:5]}")
     
     with open(test_src_path, 'r', encoding='utf-8') as f:
         test_src = [line.strip() for line in f.readlines()]
+    print(f"First 5 raw test source examples: {test_src[:5]}")
     
     # Read and parse target files (plain sentences, not lists)
     with open(train_tgt_path, 'r', encoding='utf-8') as f:
         train_tgt = [line.strip() for line in f.readlines()]
         empty_train_targets_count = sum(1 for t in train_tgt if not t)
         print(f"Training targets: {empty_train_targets_count} empty targets, out of {len(train_tgt)} total.")
+        print(f"First 5 raw train target examples: {train_tgt[:5]}")
 
     with open(test_tgt_path, 'r', encoding='utf-8') as f:
         test_tgt_raw = [line.strip() for line in f.readlines()]
@@ -67,6 +70,7 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
                     test_tgt.append("")
                     empty_test_targets_count += 1
         print(f"Test targets: {empty_test_targets_count} empty targets, {malformed_test_targets_count} malformed but kept, out of {len(test_tgt_raw)} total.")
+        print(f"First 5 raw test target examples: {test_tgt[:5]}")
     
     # Create datasets
     train_dataset = Dataset.from_dict({
@@ -91,16 +95,22 @@ def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Project
     
     dataset_dict["train"] = dataset_dict["train"].select(range(train_size))
     dataset_dict["test"] = dataset_dict["test"].select(range(test_size))
+    print(f"First 5 source examples after limiting: {train_src[:5]}")
+    print(f"First 5 target examples after limiting: {train_tgt[:5]}")
     
     # Tokenize the datasets
     def tokenize(example):
         ml = max_length if max_length is not None else tokenizer.model_max_length
-        model_inputs = tokenizer(example["source"], padding="max_length", truncation=True, max_length=ml)
-        with tokenizer.as_target_tokenizer():
-            labels = tokenizer(example["target"], padding="max_length", truncation=True, max_length=ml)
+        instruction = "Rewrite in formal style: "
+        # Obsługa batcha
+        sources = [instruction + src for src in example["source"]]
+        model_inputs = tokenizer(sources, padding="max_length", truncation=True, max_length=ml)
+        labels = tokenizer(text_target=example["target"], padding="max_length", truncation=True, max_length=ml)
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
     
     tokenized_dataset = dataset_dict.map(tokenize, batched=True)
+    print(f"First 5 tokenized train examples: {tokenized_dataset['train'][:5]}")
+    print(f"First 5 tokenized test examples: {tokenized_dataset['test'][:5]}")
     
     return tokenized_dataset
