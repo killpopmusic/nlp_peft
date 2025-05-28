@@ -5,6 +5,7 @@ from peft import (
     LoraConfig,
     PrefixTuningConfig,
     PromptTuningConfig,
+    IA3Config,
     TaskType
 )
 
@@ -19,12 +20,9 @@ def create_model(model_name, num_labels=None, method="none", task_type="SEQ_CLS"
         raise ValueError(f"Unsupported task type: {task_type}")
 
     if method == "lora":
-        # Determine target modules based on model architecture
         if "t5" in model_name.lower():
-            # T5 models use different naming conventions for attention components
             target_modules = ["q", "v"]  # For T5 models
         else:
-            # Default target modules for other architectures
             target_modules = ["query", "value"]
             
         peft_config = LoraConfig(
@@ -48,6 +46,19 @@ def create_model(model_name, num_labels=None, method="none", task_type="SEQ_CLS"
             num_layers=12,
             token_dim=768,
             num_attention_heads=12
+        )
+    elif method == "ia3":
+
+        if "t5" in model_name.lower():
+
+            target_modules = ["k", "v", "wo"]
+        else:
+            target_modules = ["key", "value", "output.dense"]
+            
+        peft_config = IA3Config(
+            target_modules=target_modules,
+            feedforward_modules=["wo"] if "t5" in model_name.lower() else ["output.dense"],
+            task_type=peft_task_type,
         )
     else:
         return base_model

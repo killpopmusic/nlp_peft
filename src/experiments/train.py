@@ -44,8 +44,7 @@ def compute_metrics_seq2seq(eval_pred):
         print(f"Sample {i+1} Decoded Prediction (no skip): '{decoded_pred_no_skip}'")
         decoded_pred_skip = tokenizer.decode(predictions[i], skip_special_tokens=True)
         print(f"Sample {i+1} Decoded Prediction (skip_special_tokens=True): '{decoded_pred_skip}'")
-        
-        # Check what strip() does
+
         processed_pred_for_bertscore = decoded_pred_skip.strip()
         print(f"Sample {i+1} Processed Prediction for BERTscore (after strip()): '{processed_pred_for_bertscore}' (is_empty: {not bool(processed_pred_for_bertscore)})")
 
@@ -60,13 +59,12 @@ def compute_metrics_seq2seq(eval_pred):
     print("Sample Predictions and Labels (batch_decode):")
     for i in range(min(10, len(decoded_preds))):
         print(f"Prediction {i+1}: '{decoded_preds[i]}'")
-        print(f"Label      {i+1}: '{decoded_labels[i]}'")
+        print(f"Reference      {i+1}: '{decoded_labels[i]}'")
 
     processed_preds = [pred.strip() for pred in decoded_preds]
     processed_labels_for_bleu = [[label.strip()] for label in decoded_labels]
     processed_labels_for_others = [label.strip() for label in decoded_labels]
 
-    # Check how many preds are non-empty for BERTscore
     non_empty_preds_for_bertscore = [p for p in processed_preds if p]
     print(f"Number of non-empty predictions for BERTscore: {len(non_empty_preds_for_bertscore)} out of {len(processed_preds)}")
 
@@ -145,9 +143,6 @@ def main():
     print(f"Tokenizer eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
     print(f"Tokenizer bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}") # Beginning of sentence
     print(f"Tokenizer model_max_length: {tokenizer.model_max_length}")
-    # For T5, decoder_start_token_id is usually pad_token_id
-    # print(f"Model config decoder_start_token_id: {model.config.decoder_start_token_id if hasattr(model, 'config') else 'N/A before model load'}")
-
 
     if args.method in ["prefix", "prompt"]:
         effective_max_length = tokenizer.model_max_length - 100
@@ -190,15 +185,10 @@ def main():
     )
 
     generation_config = GenerationConfig(
-        max_new_tokens=64,  # Preferowane nad generation_max_length, określa ile NOWYCH tokenów wygenerować
-        min_length=5,       # WAŻNE: Aby zapobiec zbyt krótkim/pustym predykcjom
-        num_beams=4,        # Tak jak miałeś
-        early_stopping=True, # Dla beam search
-        # Możesz też eksperymentować z:
-        # no_repeat_ngram_size=2,
-        # top_k=50,
-        # top_p=0.95,
-        # temperature=0.7 
+        max_new_tokens=64,  
+        min_length=5,      
+        num_beams=4,        
+        early_stopping=True, 
     )
 
     seq_training_args = Seq2SeqTrainingArguments(
@@ -214,12 +204,9 @@ def main():
         eval_steps=2000,
         predict_with_generate=True,
         #load_best_model_at_end=True,
-        # generation_max_length=64,  
-        # generation_num_beams=4,    # Optionally add beam search
-        generation_config = generation_config,  # Use the defined generation config
+        generation_config = generation_config, 
     )
 
-    # Use the appropriate trainer based on the task
     if is_seq2seq:
         trainer = Seq2SeqTrainer(
             model=model,
@@ -230,7 +217,6 @@ def main():
             compute_metrics=compute_metrics_fn,
             #callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
             data_collator=data_collator,
-            #predict_with_generate=True 
         )
     else:
         trainer = Trainer(
