@@ -6,7 +6,7 @@ import wandb
 import evaluate
 import numpy as np
 
-from transformers import AutoTokenizer, Trainer, Seq2SeqTrainer, TrainingArguments, EarlyStoppingCallback, DataCollatorForSeq2Seq,  Seq2SeqTrainingArguments
+from transformers import AutoTokenizer, Trainer, Seq2SeqTrainer, TrainingArguments, EarlyStoppingCallback, DataCollatorForSeq2Seq,  Seq2SeqTrainingArguments, GenerationConfig
 from data.load_emotion import load_emotion_dataset
 from data.load_style_dataset import load_style_dataset
 from models.models import create_model
@@ -189,6 +189,18 @@ def main():
         load_best_model_at_end=True,
     )
 
+    generation_config = GenerationConfig(
+        max_new_tokens=64,  # Preferowane nad generation_max_length, określa ile NOWYCH tokenów wygenerować
+        min_length=5,       # WAŻNE: Aby zapobiec zbyt krótkim/pustym predykcjom
+        num_beams=4,        # Tak jak miałeś
+        early_stopping=True, # Dla beam search
+        # Możesz też eksperymentować z:
+        # no_repeat_ngram_size=2,
+        # top_k=50,
+        # top_p=0.95,
+        # temperature=0.7 
+    )
+
     seq_training_args = Seq2SeqTrainingArguments(
         output_dir=args.output_dir,
         per_device_train_batch_size=args.batch_size,
@@ -201,10 +213,10 @@ def main():
         eval_strategy="steps",
         eval_steps=2000,
         predict_with_generate=True,
-        #load_best_model_at_end=True,
-        generation_max_length=32,  
-        #generation_min_length=5,
-        generation_num_beams=4,    # Optionally add beam search
+        load_best_model_at_end=True,
+        # generation_max_length=64,  
+        # generation_num_beams=4,    # Optionally add beam search
+        generation_config = generation_config,  # Use the defined generation config
     )
 
     # Use the appropriate trainer based on the task
