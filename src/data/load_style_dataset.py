@@ -3,7 +3,7 @@ import ast
 import os
 import random
 
-def load_style_dataset(tokenizer, max_length=None, data_dir="/home/tomek/Projects/nlp_peft/src/data/gyafc_em"):
+def load_style_dataset(tokenizer, max_length=None, data_dir="/home/max/Projects/nlp_peft/src/data/gyafc_em"):
     """
     Load style transfer dataset from local files.
     

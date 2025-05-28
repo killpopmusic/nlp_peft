@@ -19,12 +19,12 @@ bertscore_metric = evaluate.load("bertscore")
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--method", type=str, default="prefix", choices=["none", "lora", "prefix", "prompt"])
+    parser.add_argument("--method", type=str, default="prefix", choices=["none", "lora", "prefix", "prompt", "ia3"])
     parser.add_argument("--model_name", type=str, default="bert-base-uncased")
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--output_dir", type=str, default="./output")
-    parser.add_argument("--learning_rate", type=float, default=1e-5)
+    parser.add_argument("--learning_rate", type=float, default=1e-3)
     return parser.parse_args()
 
 
