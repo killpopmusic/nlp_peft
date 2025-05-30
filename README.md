@@ -42,5 +42,9 @@ python main.py
 this will use default arguments, you can modify them by 
 
 ```bash
+<<<<<<< HEAD
 python main.py --method lora/ia3//prefix/prompt --epochs i --batch_size j 
+=======
+python main.py --method lora/prefix/prompt  --model_name bert-base-uncased/google/flan-t5-small --epochs i --batch_size j --learning_rate k
+>>>>>>> 6ff0e04b227eb209bab3786a843ea7056b61bf49
 ```
