@@ -42,5 +42,5 @@ python main.py
 this will use default arguments, you can modify them by 
 
 ```bash
-python main.py --method lora/prefix/prompt --epochs i --batch_size j 
+python main.py --method lora/ia3//prefix/prompt --epochs i --batch_size j 
 ```

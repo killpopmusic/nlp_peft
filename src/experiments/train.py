@@ -34,23 +34,9 @@ def compute_metrics_seq2seq(eval_pred):
         predictions = predictions[0]
     
     global tokenizer
-    predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) # Keep this commented
+    predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) 
     labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
 
-    print("\n--- Detailed Generation Debug ---")
-    for i in range(min(3, len(predictions))): # Print details for first 3 samples
-        print(f"Sample {i+1} Raw Prediction Tokens: {predictions[i][:30]}") # Print first 30 tokens
-        decoded_pred_no_skip = tokenizer.decode(predictions[i], skip_special_tokens=False)
-        print(f"Sample {i+1} Decoded Prediction (no skip): '{decoded_pred_no_skip}'")
-        decoded_pred_skip = tokenizer.decode(predictions[i], skip_special_tokens=True)
-        print(f"Sample {i+1} Decoded Prediction (skip_special_tokens=True): '{decoded_pred_skip}'")
-
-        processed_pred_for_bertscore = decoded_pred_skip.strip()
-        print(f"Sample {i+1} Processed Prediction for BERTscore (after strip()): '{processed_pred_for_bertscore}' (is_empty: {not bool(processed_pred_for_bertscore)})")
-
-        decoded_label_skip = tokenizer.decode(labels[i], skip_special_tokens=True) # Assuming labels are already processed for -100
-        print(f"Sample {i+1} Decoded Label (skip_special_tokens=True): '{decoded_label_skip}'")
-    print("--- End Detailed Generation Debug ---\n")
 
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
@@ -77,8 +63,6 @@ def compute_metrics_seq2seq(eval_pred):
         if pred and ref:
             bs_preds.append(pred)
             bs_refs.append(ref)
-    
-    print(f"Number of pairs for BERTscore calculation: {len(bs_preds)}")
 
     bertscore = bertscore_metric.compute(predictions=bs_preds, references=bs_refs, lang="en") if bs_preds else {"precision": [0.0], "recall": [0.0], "f1": [0.0]}
 
@@ -154,10 +138,6 @@ def main():
     if is_seq2seq:
         dataset = load_style_dataset(tokenizer, max_length=effective_max_length)
         model = create_model(args.model_name, method=args.method, task_type="SEQ_2_SEQ_LM")
-        print(f"Model config decoder_start_token_id: {model.config.decoder_start_token_id}")
-        print(f"Model config eos_token_id: {model.config.eos_token_id}")
-        print(f"Model config pad_token_id: {model.config.pad_token_id}")
-        print(f"Model config max_length for generation (default): {model.config.max_length}")
         data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
         compute_metrics_fn = compute_metrics_seq2seq
     else:
