@@ -30,5 +30,5 @@ plt.title("F1-score by Method")
 plt.ylabel("F1-score")
 
 plt.tight_layout()
-plt.savefig(plot_filename)  # Save the plot with the timestamped filename
+plt.savefig(plot_filename)  # timestamp
 print(f"Plot saved as '{plot_filename}'")

@@ -19,12 +19,12 @@ bertscore_metric = evaluate.load("bertscore")
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--method", type=str, default="prefix", choices=["none", "lora", "prefix", "prompt", "ia3"])
+    parser.add_argument("--method", type=str, default="prefix", choices=["none", "lora", "prefix", "prompt"])
     parser.add_argument("--model_name", type=str, default="bert-base-uncased")
     parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--output_dir", type=str, default="./output")
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
+    parser.add_argument("--learning_rate", type=float, default=1e-5)
     return parser.parse_args()
 
 
@@ -74,7 +74,7 @@ def compute_metrics_seq2seq(eval_pred):
 
     bs_preds, bs_refs = [], []
     for pred, ref in zip(processed_preds, processed_labels_for_others):
-        if pred and ref: # This condition is key for BERTscore
+        if pred and ref:
             bs_preds.append(pred)
             bs_refs.append(ref)
     
@@ -118,7 +118,6 @@ def save_results(method, results, trainable_params, args, train_time=None, max_m
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
 
-    # Log to wandb
     wandb.log(entry)
 
 def compute_metrics(eval_pred):
