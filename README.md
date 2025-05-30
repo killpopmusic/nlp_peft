@@ -1,5 +1,5 @@
 # PEFT Methods Comparison
-
+This repository contains a project comparing PEFT metohods in the "Natura language processing tasks"
 ### Requirements
 - Ubuntu (minimum 22.04)
 - NVIDIA GPU with CUDA 12.x
@@ -24,7 +24,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cu121
 ```
 4. Install dependencies: 
 ```bash
-pip install transformers peft datasets evaluate scikit-learn matplotlib
+pip install transformers peft datasets evaluate scikit-learn matplotlib wandb sacrebleu rouge_score nltk bert_score
 ``` 
 
 5. Begin your prayers and then verify CUDA/PyTorch 
@@ -42,9 +42,5 @@ python main.py
 this will use default arguments, you can modify them by 
 
 ```bash
-<<<<<<< HEAD
-python main.py --method lora/ia3//prefix/prompt --epochs i --batch_size j 
-=======
-python main.py --method lora/prefix/prompt  --model_name bert-base-uncased/google/flan-t5-small --epochs i --batch_size j --learning_rate k
->>>>>>> 6ff0e04b227eb209bab3786a843ea7056b61bf49
+python main.py --method lora/ia3/prefix/prompt  --model_name bert-base-uncased/google/flan-t5-small --epochs i --batch_size j --learning_rate k
 ```
