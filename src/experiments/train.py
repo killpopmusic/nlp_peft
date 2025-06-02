@@ -12,7 +12,6 @@ from data.load_style_dataset import load_style_dataset
 from models.models import create_model
 from sklearn.metrics import accuracy_score, f1_score
 
-#load metrics for seq2seq
 bleu_metric = evaluate.load("bleu")
 rouge_metric = evaluate.load("rouge")
 bertscore_metric = evaluate.load("bertscore")
@@ -27,7 +26,6 @@ def parse_args():
     parser.add_argument("--learning_rate", type=float, default=1e-5)
     return parser.parse_args()
 
-
 def compute_metrics_seq2seq(eval_pred):
     predictions, labels = eval_pred
     if isinstance(predictions, tuple):
@@ -36,7 +34,6 @@ def compute_metrics_seq2seq(eval_pred):
     global tokenizer
     predictions = np.where(predictions == -100, tokenizer.pad_token_id, predictions) 
     labels = np.where(labels == -100, tokenizer.pad_token_id, labels)
-
 
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
@@ -50,11 +47,7 @@ def compute_metrics_seq2seq(eval_pred):
     processed_preds = [pred.strip() for pred in decoded_preds]
     processed_labels_for_bleu = [[label.strip()] for label in decoded_labels]
     processed_labels_for_others = [label.strip() for label in decoded_labels]
-
-    non_empty_preds_for_bertscore = [p for p in processed_preds if p]
-    print(f"Number of non-empty predictions for BERTscore: {len(non_empty_preds_for_bertscore)} out of {len(processed_preds)}")
-
-
+   
     bleu = bleu_metric.compute(predictions=processed_preds, references=processed_labels_for_bleu)
     rouge = rouge_metric.compute(predictions=processed_preds, references=processed_labels_for_others)
 
@@ -121,11 +114,6 @@ def main():
     )
     global tokenizer
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    print(f"Tokenizer: {tokenizer.__class__}")
-    print(f"Tokenizer pad_token: {tokenizer.pad_token}, pad_token_id: {tokenizer.pad_token_id}")
-    print(f"Tokenizer eos_token: {tokenizer.eos_token}, eos_token_id: {tokenizer.eos_token_id}")
-    print(f"Tokenizer bos_token: {tokenizer.bos_token}, bos_token_id: {tokenizer.bos_token_id}") # Beginning of sentence
-    print(f"Tokenizer model_max_length: {tokenizer.model_max_length}")
 
     if args.method in ["prefix", "prompt"]:
         effective_max_length = tokenizer.model_max_length - 100
