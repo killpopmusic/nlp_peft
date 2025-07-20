@@ -1,5 +1,5 @@
 # PEFT Methods Comparison
-This repository contains a project comparing PEFT metohods in the "Natura language processing tasks"
+This repository contains a project comparing PEFT metohods in the "Natural language processing tasks"
 ### Requirements
 - Ubuntu (minimum 22.04)
 - NVIDIA GPU with CUDA 12.x
